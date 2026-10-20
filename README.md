@@ -96,3 +96,14 @@ node test/client-smoke.mjs # 客户端 bundle 的 slot 注册
 
 - 会话 A：弹窗里关掉「（内置/先加载）」→ 发给模型的工具列表 30 个（不含 `working_directory`）→ 模型硬调该工具 → UI 显示 `Error: tool-gate: tool is masked because its plugin was disabled for this session (working_directory)`。
 - 会话 B：弹窗选「稍后再说」→ 工具列表 31 个（含 `working_directory`）→ 调用正常执行。
+
+## 发布
+
+发布由 `.github/workflows/release.yml` 处理。发布 `vX.Y.Z` 格式的 GitHub Release 后，工作流会：
+
+1. 校验 Release tag 与 `package.json` 的 `version` 一致；
+2. 查询 npm registry，确认 `@suntion/dsh-tool-gate@X.Y.Z` 尚未发布；
+3. 运行测试，用 `pnpm pack` 生成 tarball，再用 `npm publish` 发布到 npm（`pnpm` 与 `npm` 共用同一个 registry，不需要分别发布）；
+4. 发布后轮询 registry，确认该版本可以查到。
+
+首次使用前，在仓库 **Settings → Secrets and variables → Actions** 中添加 `NPM_TOKEN`，token 需要拥有该包的发布权限。工作流也支持手动触发：填写已有的 Release tag 即可重试。

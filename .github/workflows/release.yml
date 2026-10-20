@@ -1,0 +1,165 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 Release tag（例如 v0.1.0）'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Pack and publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Validate release version
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${RELEASE_TAG}" ]; then
+            echo "::error::No release tag was provided."
+            exit 1
+          fi
+
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          VERSION="$(node -p "require('./package.json').version")"
+
+          if [ "${RELEASE_TAG#v}" != "${VERSION}" ]; then
+            echo "::error::Release tag '${RELEASE_TAG}' does not match package.json version '${VERSION}'."
+            exit 1
+          fi
+
+          echo "package=${PACKAGE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Publishing ${PACKAGE_NAME}@${VERSION} from ${RELEASE_TAG}."
+
+      - name: Check version is unpublished
+        env:
+          PACKAGE_NAME: ${{ steps.release.outputs.package }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          ENCODED_NAME="${PACKAGE_NAME//\//%2f}"
+          METADATA="${RUNNER_TEMP}/npm-metadata.json"
+          HTTP_STATUS="$(curl -sS --retry 3 --retry-delay 2 \
+            -o "${METADATA}" \
+            -w '%{http_code}' \
+            "https://registry.npmjs.org/${ENCODED_NAME}")"
+
+          case "${HTTP_STATUS}" in
+            404)
+              echo "OK: ${PACKAGE_NAME} is not published yet."
+              ;;
+            200)
+              node - "${VERSION}" "${METADATA}" <<'NODE'
+          const fs = require('node:fs')
+
+          const [version, file] = process.argv.slice(2)
+          const metadata = JSON.parse(fs.readFileSync(file, 'utf8'))
+          const versions = Object.keys(metadata.versions ?? {})
+
+          if (versions.includes(version)) {
+            console.error(`::error::${metadata.name}@${version} is already published.`)
+            process.exit(1)
+          }
+
+          const latest = metadata['dist-tags']?.latest ?? 'none'
+          console.log(`OK: ${metadata.name}@${version} is unique; latest published version is ${latest}.`)
+          NODE
+              ;;
+            *)
+              echo "::error::Unable to verify npm registry state (HTTP ${HTTP_STATUS})."
+              cat "${METADATA}" || true
+              exit 1
+              ;;
+          esac
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          npm test
+          node test/client-smoke.mjs
+
+      - name: Pack tarball with pnpm
+        id: pack
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          pnpm pack --pack-destination dist
+
+          TARBALL="$(find dist -maxdepth 1 -type f -name '*.tgz' | head -n 1)"
+          if [ -z "${TARBALL}" ]; then
+            echo "::error::pnpm pack did not produce a tarball."
+            exit 1
+          fi
+
+          echo "tarball=${TARBALL}" >> "${GITHUB_OUTPUT}"
+          echo "Packed ${TARBALL}:"
+          tar -tzf "${TARBALL}"
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN secret is not configured."
+            exit 1
+          fi
+
+          npm publish "${TARBALL}" --access public
+
+      - name: Verify publication
+        env:
+          PACKAGE_NAME: ${{ steps.release.outputs.package }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          ENCODED_NAME="${PACKAGE_NAME//\//%2f}"
+
+          for attempt in $(seq 1 10); do
+            if curl -fsS "https://registry.npmjs.org/${ENCODED_NAME}/${VERSION}" > /dev/null; then
+              echo "Verified ${PACKAGE_NAME}@${VERSION} on npm."
+              exit 0
+            fi
+            echo "Waiting for npm registry (attempt ${attempt}/10)..."
+            sleep 3
+          done
+
+          echo "::error::${PACKAGE_NAME}@${VERSION} was not found on npm after publishing."
+          exit 1
