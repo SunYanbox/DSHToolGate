@@ -103,7 +103,8 @@ node test/client-smoke.mjs # 客户端 bundle 的 slot 注册
 
 1. 校验 Release tag 与 `package.json` 的 `version` 一致；
 2. 查询 npm registry，确认 `@suntion/dsh-tool-gate@X.Y.Z` 尚未发布；
-3. 运行测试，用 `pnpm pack` 生成 tarball，再用 `npm publish` 发布到 npm（`pnpm` 与 `npm` 共用同一个 registry，不需要分别发布）；
-4. 发布后轮询 registry，确认该版本可以查到。
+3. 运行测试，用 `pnpm pack` 生成 tarball，再用 `npm publish` 发布到 npm（`pnpm` 与 `npm` 共用同一个 registry，不需要分别发布）。
+
+发布到 npm 后工作流即结束，不再轮询 registry 做二次确认：`npm publish` 返回 0 就代表 tarball 已被接收，而 npm 会对新版本做自动审核，审核完成前 registry 一直对该版本返回 404（npm 网站上状态显示为「验证」，实测需要几分钟）。想看结果直接打开 `https://www.npmjs.com/package/@suntion/dsh-tool-gate`。
 
 首次使用前，在仓库 **Settings → Secrets and variables → Actions** 中添加 `NPM_TOKEN`，token 需要拥有该包的发布权限。工作流也支持手动触发：填写已有的 Release tag 即可重试。

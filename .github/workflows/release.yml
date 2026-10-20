@@ -144,22 +144,3 @@ jobs:
 
           npm publish "${GITHUB_WORKSPACE}/${TARBALL}" --access public
 
-      - name: Verify publication
-        env:
-          PACKAGE_NAME: ${{ steps.release.outputs.package }}
-          VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          set -euo pipefail
-          ENCODED_NAME="${PACKAGE_NAME//\//%2f}"
-
-          for attempt in $(seq 1 10); do
-            if curl -fsS "https://registry.npmjs.org/${ENCODED_NAME}/${VERSION}" > /dev/null; then
-              echo "Verified ${PACKAGE_NAME}@${VERSION} on npm."
-              exit 0
-            fi
-            echo "Waiting for npm registry (attempt ${attempt}/10)..."
-            sleep 3
-          done
-
-          echo "::error::${PACKAGE_NAME}@${VERSION} was not found on npm after publishing."
-          exit 1
