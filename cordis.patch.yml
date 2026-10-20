@@ -1,0 +1,8 @@
+# dsh-tool-gate bundle layer: inserts the plugin row.
+# The `name` is the package entry; the DSH Loader resolves it from the
+# profile's node_modules.  Defaults: nothing disabled, every session asks.
+- insert:
+    - id: tool-gate
+      name: dsh-tool-gate
+      config:
+        askOnSessionStart: true
