@@ -142,7 +142,7 @@ jobs:
             exit 1
           fi
 
-          npm publish "${TARBALL}" --access public
+          npm publish "${GITHUB_WORKSPACE}/${TARBALL}" --access public
 
       - name: Verify publication
         env:
