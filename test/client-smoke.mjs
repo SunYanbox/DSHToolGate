@@ -51,7 +51,7 @@ const ctx = {
 new Function('window', code)(globalThis.window)
 
 assert.ok(loaded, 'bundle registered itself with __ModuleLoader__')
-assert.equal(loaded.id, 'dsh-tool-gate', 'bundle id matches the package name')
+assert.equal(loaded.id, '@suntion/dsh-tool-gate', 'bundle id matches the package name')
 
 const exported = loaded.factory(name => {
   assert.equal(name, 'react', `unexpected module request: ${name}`)

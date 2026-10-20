@@ -1,4 +1,6 @@
-# dsh-tool-gate
+# @suntion/dsh-tool-gate
+
+仓库：<https://github.com/SunYanbox/DSHToolGate>
 
 会话级的「按插件工具门控」插件（DeepSeek Harness 0.2.x）。
 
@@ -32,7 +34,7 @@
 dsh plugin --profile desktop add link:<本目录的绝对路径>
 ```
 
-然后在 `$DSH_HOME/profiles/desktop/package.json`（`DSH_HOME` 默认是 `~/.dsh`）的 `dsh.profile.bundles` 末尾确认有 `dsh-tool-gate`（`dsh plugin add` 会自动追加），重启 DSH 生效。
+然后在 `$DSH_HOME/profiles/desktop/package.json`（`DSH_HOME` 默认是 `~/.dsh`）的 `dsh.profile.bundles` 末尾确认有 `@suntion/dsh-tool-gate`（`dsh plugin add` 会自动追加），重启 DSH 生效。
 
 开发时可复制一份临时 profile 试用：
 

@@ -3,14 +3,14 @@ import { locateProfileDir, scanInstalledPlugins } from '../lib/scan/index.js'
 import { locateAsar } from '../lib/scan/asar.js'
 
 // Override with DSH_PROFILE_DIR / DSH_ASAR; otherwise locate both at runtime.
-const profileDir = process.env.DSH_PROFILE_DIR ?? locateProfileDir({ ownPackageName: 'dsh-tool-gate' })
+const profileDir = process.env.DSH_PROFILE_DIR ?? locateProfileDir({ ownPackageName: '@suntion/dsh-tool-gate' })
 const asarPath = process.env.DSH_ASAR ?? locateAsar()
 if (!profileDir) {
-  console.error('dsh-tool-gate: could not locate a DSH profile; set DSH_PROFILE_DIR')
+  console.error('@suntion/dsh-tool-gate: could not locate a DSH profile; set DSH_PROFILE_DIR')
   process.exit(1)
 }
 if (!asarPath) {
-  console.error('dsh-tool-gate: could not locate app.asar; set DSH_ASAR')
+  console.error('@suntion/dsh-tool-gate: could not locate app.asar; set DSH_ASAR')
   process.exit(1)
 }
 
