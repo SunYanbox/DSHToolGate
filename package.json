@@ -1,11 +1,11 @@
 {
   "name": "@suntion/dsh-tool-gate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "keywords": ["dsh-plugin"],
   "description": "Per-session, per-plugin tool gating for DeepSeek Harness: at session start, choose which enabled plugins may contribute tools; disabled plugins' tools are never injected into that session's prompt.",
   "author": "Suntion",
   "type": "module",
-  "license": "MIT",
+  "license": "MPL-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/SunYanbox/DSHToolGate"
