@@ -1,7 +1,5 @@
 # @suntion/dsh-tool-gate
 
-仓库：<https://github.com/SunYanbox/DSHToolGate>
-
 会话级的「按插件工具门控」插件（DeepSeek Harness 0.2.x）。
 
 会话开始时弹出选择面板：列出**所有已启用、且会注册工具**的插件，每个插件一个标签（悬停显示它会注册哪些工具）。
