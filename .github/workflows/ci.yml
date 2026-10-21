@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test on Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 最低版本必须与 package.json 的 engines.node 一致。
+        # engines 本身拦不住旧运行时，真正兜底的是在这些版本上跑测试。
+        node: ['18.x', '20.x', '22.x', '24.x']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 这个包没有运行时依赖，测试只用内置模块，所以无需 install。
+      - name: Host tests
+        run: node test/smoke.mjs
+
+      - name: Client bundle smoke test
+        run: node test/client-smoke.mjs
